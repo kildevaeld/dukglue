@@ -33,3 +33,19 @@ void dukglue_register_function(duk_context* ctx, RetType(*funcToCall)(Ts...), co
 
 	duk_put_global_string(ctx, name);
 }
+
+// Push a function.
+template<typename RetType, typename... Ts>
+void dukglue_push_function(duk_context* ctx, RetType(*funcToCall)(Ts...), const char* name)
+{
+	duk_c_function evalFunc = dukglue::detail::FuncInfoHolder<RetType, Ts...>::FuncRuntime::call_native_function;
+
+	duk_push_c_function(ctx, evalFunc, sizeof...(Ts));
+
+  static_assert(sizeof(RetType(*)(Ts...)) == sizeof(void*), "Function pointer and data pointer are different sizes");
+	duk_push_pointer(ctx, reinterpret_cast<void*>(funcToCall));
+	duk_put_prop_string(ctx, -2, "\xFF" "func_ptr");
+	duk_push_string(ctx, name);
+	duk_put_prop_string(ctx, -2, "name");
+
+}
